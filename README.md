@@ -23,3 +23,12 @@ Example usage:
 
 ```bash
 curl "http://localhost:8080/get?key=myKey"
+```
+
+### Create Key-Value Pair  
+**Endpoint**: `PUT /create`
+
+Example usage:
+```bash
+curl -X PUT -H "Content-Type: application/json" -d '{"myKey": "myValue"}' http://localhost:8080/create
+```
