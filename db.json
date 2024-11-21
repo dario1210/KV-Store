@@ -1,0 +1,8 @@
+{
+  "username": "john_doe",
+  "email": "john.doe@example.com",
+  "age": "28",
+  "city": "New York",
+  "occupation": "Software Engineer",
+  "isActive": "true"
+}
