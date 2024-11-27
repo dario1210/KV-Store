@@ -3,13 +3,26 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
-	"os"
+	"sync"
 )
 
 type KeyValueStore struct {
 	Key map[string]string `json:"key"`
+	mu  sync.Mutex
+}
+
+var requestCount int
+
+const (
+	limit = 10
+)
+
+func NewKeyValueStore() *KeyValueStore {
+	return &KeyValueStore{
+		Key: make(map[string]string),
+		mu:  sync.Mutex{},
+	}
 }
 
 func GetValueByKey(w http.ResponseWriter, r *http.Request) {
@@ -17,7 +30,7 @@ func GetValueByKey(w http.ResponseWriter, r *http.Request) {
 
 	val, err := repo.GetValueByKey(key)
 	if err != nil {
-		log.Println("Key does not exist.")
+		http.Error(w, "That key does not exist.", http.StatusNotFound)
 		return
 	}
 
@@ -26,29 +39,32 @@ func GetValueByKey(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateKey(w http.ResponseWriter, r *http.Request) {
-	var KeyValueStore KeyValueStore
-	err := json.NewDecoder(r.Body).Decode(&KeyValueStore)
+	var requestBody KeyValueStore
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
 		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
 		return
 	}
 
-	data, err := repo.CreateKey(KeyValueStore.Key)
+	data, err := repo.CreateKey(requestBody.Key)
 	if err != nil {
-		log.Println("Cannot add key sorry best.")
-	}
-
-	updatedJSON, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
-		http.Error(w, "Failed to serialize updated data", http.StatusInternalServerError)
+		http.Error(w, "Failed to add key.", http.StatusInternalServerError)
 		return
 	}
 
-	err = os.WriteFile("db.json", updatedJSON, 0644)
-	if err != nil {
-		http.Error(w, "Failed to write updated data to the database file", http.StatusInternalServerError)
-		return
+	requestCount++
+
+	// Only persist data when the request count reaches the limit
+	if requestCount >= limit {
+		err = PersistData(data)
+		if err != nil {
+			http.Error(w, "Data save in db failed.", http.StatusInternalServerError)
+			return
+		}
+
+		requestCount = 0
 	}
 
-	fmt.Fprintln(w, "File Updated succesfully.")
+	fmt.Fprintln(w, "File updated successfully.")
 }

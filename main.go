@@ -7,10 +7,11 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-var repo *FileRepo
+var repo *Repo
 
 func main() {
-	repo = NewFileRepository("db.json")
+	kvStore := NewKeyValueStore()
+	repo = NewRepository("db.json", kvStore)
 
 	r := chi.NewRouter()
 	RegisterRoutes(r)
