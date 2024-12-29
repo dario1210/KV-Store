@@ -1,4 +1,4 @@
-module key-value
+module github.com/dario1210/KV-Store
 
 go 1.23.1
 
